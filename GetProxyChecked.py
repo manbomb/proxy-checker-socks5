@@ -26,5 +26,3 @@ class GetProxyChecked:
                 good_ips.append(ipRaw)
 
         return good_ips
-
-GetProxyChecked().get(3)
