@@ -1,9 +1,53 @@
-from ProxyTest import ProxyS5Test
-from Colors import yellow
+import os
+import time
+import urllib.request as urllib2
+import socks
+from sockshandler import SocksiPyHandler
+from termcolor import cprint
 
+def green(s) -> str:
+    cprint(s, 'green')
+
+def red(s) -> str:
+    cprint(s, 'red')
+
+def yellow(s) -> str:
+    cprint(s, 'yellow')
+
+def getMillis() -> int:
+    milli = int(round(time.time() * 1000))
+    return milli
+class ProxyS5Test:
+    def __init__(self, ip:str, port:int, display_only_good:bool=False):
+        self.ip = ip
+        self.port = port
+        self.dog = display_only_good
+    
+    def test(self, index=None, total=None) -> bool:
+        init_time = getMillis()
+        opener = urllib2.build_opener(SocksiPyHandler(socks.SOCKS5, self.ip, self.port))
+
+        if (index != None and index != None):
+            perc = round((index+1)/total, 3)
+            perc = "{:.3f}".format(perc)
+            perc = f"{str(perc)}%"
+        else:
+            perc = ""
+
+        try:
+            ret = opener.open("https://api.ipify.org/")
+            green(f"{perc}\tGood proxy\t{self.ip}:{str(self.port)}\t{str(getMillis()-init_time)}ms")
+            return True
+        except Exception:
+            if not self.dog:
+                red(f"{perc}\tBad Proxy\t{self.ip}:{str(self.port)}")
+            return False
+
+def getIpsFilePath() -> str:
+    return os.path.abspath("ips.txt")
 class GetProxyChecked:
     def __init__(self) -> None:
-        self.file_ips = open("ips.txt", "r").read()
+        self.file_ips = open(getIpsFilePath(), "r").read()
         self.ips = self.file_ips.split("\n")
         self.ips_total = len(self.ips)
     
