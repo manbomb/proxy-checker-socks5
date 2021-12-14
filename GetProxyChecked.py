@@ -46,8 +46,11 @@ class ProxyS5Test:
 def getIpsFilePath() -> str:
     return os.path.abspath("ips.txt")
 class GetProxyChecked:
-    def __init__(self) -> None:
-        self.file_ips = open(getIpsFilePath(), "r").read()
+    def __init__(self, list_file:str=None) -> None:
+        if (list_file is None):
+            self.file_ips = open(getIpsFilePath(), "r").read()
+        else:
+            self.file_ips = open(list_file, "r").read()
         self.ips = self.file_ips.split("\n")
         self.ips_total = len(self.ips)
     
