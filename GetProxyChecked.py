@@ -1,5 +1,7 @@
 import os
 import time
+from typing import Callable
+import random
 import urllib.request as urllib2
 import socks
 from sockshandler import SocksiPyHandler
@@ -18,30 +20,30 @@ def getMillis() -> int:
     milli = int(round(time.time() * 1000))
     return milli
 class ProxyS5Test:
-    def __init__(self, ip:str, port:int, display_only_good:bool=False):
+    def __init__(self, ip:str, port:int):
         self.ip = ip
         self.port = port
-        self.dog = display_only_good
     
-    def test(self, index=None, total=None) -> bool:
+    def test(self) -> dict:
         init_time = getMillis()
         opener = urllib2.build_opener(SocksiPyHandler(socks.SOCKS5, self.ip, self.port))
 
-        if (index != None and index != None):
-            perc = round((index+1)/total, 3)
-            perc = "{:.3f}".format(perc)
-            perc = f"{str(perc)}%"
-        else:
-            perc = ""
-
         try:
             ret = opener.open("https://api.ipify.org/")
-            green(f"{perc}\tGood proxy\t{self.ip}:{str(self.port)}\t{str(getMillis()-init_time)}ms")
-            return True
+            
+            return {
+                'ip': self.ip,
+                'port': str(self.port),
+                'time': getMillis()-init_time,
+                'status': True
+            }
         except Exception:
-            if not self.dog:
-                red(f"{perc}\tBad Proxy\t{self.ip}:{str(self.port)}")
-            return False
+            return {
+                'ip': self.ip,
+                'port': str(self.port),
+                'time': 0,
+                'status': False
+            }
 
 def getIpsFilePath() -> str:
     return os.path.abspath("ips.txt")
@@ -54,22 +56,33 @@ class GetProxyChecked:
         self.ips = self.file_ips.split("\n")
         self.ips_total = len(self.ips)
     
-    def get(self, limit) -> list:
+    def get(self, limit:int, postTest:Callable=None) -> list:
         yellow(f"\n\t{self.ips_total} IPs in list\n")
 
         good_ips = []
 
+        ini_post = random.randint(0, self.ips_total-1)
+
         for index in range(self.ips_total):
             if (len(good_ips) >= limit):
                 break
-
-            ipRaw = self.ips[index]
+            
+            indexPos = (index+ini_post)%self.ips_total
+            ipRaw = self.ips[indexPos]
             ip = ipRaw.split(":")[0]
             port = int(ipRaw.split(":")[1])
 
-            test = ProxyS5Test(ip, port, display_only_good=True).test(index, self.ips_total)
+            test = ProxyS5Test(ip, port).test()
+            pTest = True
 
-            if (test):
-                good_ips.append(ipRaw)
+            if postTest is not None:
+                pTest = postTest(test)
+
+            perc = "{:.3f}".format((index+1)/self.ips_total)
+            perc = f"{perc}%"
+
+            if (test['status'] and pTest):
+                green(f"{perc}\tGood proxy\t{test['ip']}:{test['port']}\t{test['time']}ms")
+                good_ips.append(test)
 
         return good_ips
